@@ -39,6 +39,7 @@ static bool g_traceDisk = false;
 static bool g_traceGovernorLoad = false;
 static bool g_traceWorkqueue = false;
 static bool g_traceOverwrite = false;
+static bool g_traceGpuPower = false;
 static int g_traceBufferSizeKB = 2048;
 static bool g_compress = false;
 
@@ -72,6 +73,9 @@ static const char* k_governorLoadEnablePath =
 
 static const char* k_workqueueEnablePath =
     "/sys/kernel/debug/tracing/events/workqueue/enable";
+
+static const char *k_gpuEnablePath =
+    "/sys/kernel/debug/tracing/events/kgsl/kgsl_pwrlevel/enable";
 
 static const char* k_diskEnablePaths[] = {
         "/sys/kernel/debug/tracing/events/ext4/ext4_sync_file_enter/enable",
@@ -170,6 +174,12 @@ static bool setWorkqueueTracingEnabled(bool enable)
     return setKernelOptionEnable(k_workqueueEnablePath, enable);
 }
 
+// Enable or disable tracing of the GPU power frequency
+static bool setGpuPowerTracingEnabled(bool enable)
+{
+    return setKernelOptionEnable(k_gpuEnablePath, enable);
+}
+
 // Enable or disable tracing of disk I/O.
 static bool setDiskTracingEnabled(bool enable)
 {
@@ -241,6 +251,7 @@ static bool startTrace(bool isRoot)
     // require root should have errored out earlier if we're not running as
     // root.
     if (isRoot) {
+        ok &= setGpuPowerTracingEnabled(g_traceGpuPower);
         ok &= setWorkqueueTracingEnabled(g_traceWorkqueue);
         ok &= setDiskTracingEnabled(g_traceDisk);
     }
@@ -419,13 +430,21 @@ int main(int argc, char **argv)
     for (;;) {
         int ret;
 
-        ret = getopt(argc, argv, "b:cidflst:wz");
+        ret = getopt(argc, argv, "b:gcidflst:wz");
 
         if (ret < 0) {
             break;
         }
 
         switch(ret) {
+            case 'g':
+                if (!isRoot) {
+                    fprintf(stderr, "error: tracing GPU power state requires root privileges\n");
+                    exit(1);
+                }
+                g_traceGpuPower = true;
+            break;
+
             case 'b':
                 g_traceBufferSizeKB = atoi(optarg);
             break;
