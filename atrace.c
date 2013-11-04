@@ -396,6 +396,7 @@ static void showHelp(const char *cmd)
                     "  -c              trace into a circular buffer\n"
                     "  -d              trace disk I/O\n"
                     "  -f              trace CPU frequency changes\n"
+                    "  -i              trace CPU idle\n"
                     "  -l              trace CPU frequency governor load\n"
                     "  -s              trace the kernel scheduler switches\n"
                     "  -t N            trace for N seconds [defualt 5]\n"
